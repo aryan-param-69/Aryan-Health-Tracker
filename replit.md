@@ -1,10 +1,11 @@
-# [Project name]
+# Vitalize
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A glassmorphic health analytics dashboard for tracking daily vitals — steps, hydration, sleep, and calories — with progress rings, trend charts, and goal management.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/vitalize run dev` — run the frontend (port 26128)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,6 +15,7 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite, Tailwind CSS, Framer Motion, Recharts, Wouter
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,24 +24,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — OpenAPI contract (source of truth)
+- `lib/db/src/schema/health_logs.ts` — health_logs table
+- `lib/db/src/schema/goals.ts` — goals table
+- `lib/api-client-react/src/generated/` — generated React Query hooks
+- `lib/api-zod/src/generated/` — generated Zod schemas
+- `artifacts/api-server/src/routes/health-logs.ts` — health log CRUD routes
+- `artifacts/api-server/src/routes/goals.ts` — goals routes
+- `artifacts/vitalize/src/` — React frontend
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- OpenAPI-first: all contracts defined in `openapi.yaml`, frontend/backend types generated via Orval
+- POST `/health-logs` upserts by date — logging the same day twice updates rather than errors
+- Goals auto-initialize to defaults if none exist (single-row pattern)
+- `/health-logs/today`, `/health-logs/summary`, and `/health-logs/trend` are derived/aggregate endpoints that make the dashboard feel real without extra frontend logic
+- Dark mode is the primary and only mode; no light mode toggle needed
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Dashboard with animated SVG progress rings (steps, hydration, sleep, calories) and a 7-day area trend chart
+- Log Entry page for quick metric entry (upserts today's log)
+- History page with scrollable past entries and delete/edit actions
+- Goals settings page to configure daily targets
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Always run `pnpm --filter @workspace/api-spec run codegen` after changing `openapi.yaml`
+- Always run `pnpm run typecheck:libs` after changing DB schema files before typechecking leaf packages
+- After changing DB schema, run `pnpm --filter @workspace/db run push`

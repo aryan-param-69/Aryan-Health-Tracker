@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Vitalize Health Analytics API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: logs
+    description: Health log entries
+  - name: goals
+    description: Daily health goals
 paths:
   /healthz:
     get:
@@ -24,6 +28,190 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /health-logs:
+    get:
+      operationId: listHealthLogs
+      tags: [logs]
+      summary: List health logs
+      description: Returns health log entries, optionally filtered by date range
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+          description: Start date (YYYY-MM-DD)
+        - name: endDate
+          in: query
+          schema:
+            type: string
+          description: End date (YYYY-MM-DD)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Max number of entries to return
+      responses:
+        "200":
+          description: List of health logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthLog"
+    post:
+      operationId: createHealthLog
+      tags: [logs]
+      summary: Create or upsert a health log entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthLogInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthLog"
+        "400":
+          description: Invalid input
+
+  /health-logs/today:
+    get:
+      operationId: getTodayLog
+      tags: [logs]
+      summary: Get today's health log
+      responses:
+        "200":
+          description: Today's health log (may be empty defaults)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthLog"
+
+  /health-logs/summary:
+    get:
+      operationId: getDailySummary
+      tags: [logs]
+      summary: Get today's progress summary
+      description: Returns today's metrics vs goals with completion percentages
+      responses:
+        "200":
+          description: Daily summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailySummary"
+
+  /health-logs/trend:
+    get:
+      operationId: getWeeklyTrend
+      tags: [logs]
+      summary: Get 7-day trend data
+      description: Returns aggregated metrics for the last 7 days for chart rendering
+      responses:
+        "200":
+          description: Weekly trend data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendPoint"
+
+  /health-logs/{id}:
+    get:
+      operationId: getHealthLog
+      tags: [logs]
+      summary: Get a single health log by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Health log entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthLog"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateHealthLog
+      tags: [logs]
+      summary: Update a health log entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthLogUpdate"
+      responses:
+        "200":
+          description: Updated health log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthLog"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteHealthLog
+      tags: [logs]
+      summary: Delete a health log entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /goals:
+    get:
+      operationId: getGoals
+      tags: [goals]
+      summary: Get current daily goals
+      responses:
+        "200":
+          description: Current goals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goals"
+    put:
+      operationId: updateGoals
+      tags: [goals]
+      summary: Update daily goals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalsInput"
+      responses:
+        "200":
+          description: Updated goals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goals"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +222,146 @@ components:
       required:
         - status
 
+    HealthLog:
+      type: object
+      required: [id, date, steps, hydrationMl, sleepHours, caloriesKcal, createdAt]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+          description: Date in YYYY-MM-DD format
+        steps:
+          type: integer
+        hydrationMl:
+          type: integer
+        sleepHours:
+          type: number
+        caloriesKcal:
+          type: integer
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    HealthLogInput:
+      type: object
+      required: [date, steps, hydrationMl, sleepHours, caloriesKcal]
+      properties:
+        date:
+          type: string
+          description: Date in YYYY-MM-DD format
+        steps:
+          type: integer
+          minimum: 0
+        hydrationMl:
+          type: integer
+          minimum: 0
+        sleepHours:
+          type: number
+          minimum: 0
+          maximum: 24
+        caloriesKcal:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+
+    HealthLogUpdate:
+      type: object
+      properties:
+        steps:
+          type: integer
+          minimum: 0
+        hydrationMl:
+          type: integer
+          minimum: 0
+        sleepHours:
+          type: number
+          minimum: 0
+          maximum: 24
+        caloriesKcal:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+
+    Goals:
+      type: object
+      required: [id, stepsGoal, hydrationGoalMl, sleepGoalHours, caloriesGoalKcal]
+      properties:
+        id:
+          type: integer
+        stepsGoal:
+          type: integer
+        hydrationGoalMl:
+          type: integer
+        sleepGoalHours:
+          type: number
+        caloriesGoalKcal:
+          type: integer
+
+    GoalsInput:
+      type: object
+      properties:
+        stepsGoal:
+          type: integer
+          minimum: 0
+        hydrationGoalMl:
+          type: integer
+          minimum: 0
+        sleepGoalHours:
+          type: number
+          minimum: 0
+          maximum: 24
+        caloriesGoalKcal:
+          type: integer
+          minimum: 0
+
+    DailySummary:
+      type: object
+      required: [date, steps, hydrationMl, sleepHours, caloriesKcal, stepsGoal, hydrationGoalMl, sleepGoalHours, caloriesGoalKcal, stepsPercent, hydrationPercent, sleepPercent, caloriesPercent, overallScore]
+      properties:
+        date:
+          type: string
+        steps:
+          type: integer
+        hydrationMl:
+          type: integer
+        sleepHours:
+          type: number
+        caloriesKcal:
+          type: integer
+        stepsGoal:
+          type: integer
+        hydrationGoalMl:
+          type: integer
+        sleepGoalHours:
+          type: number
+        caloriesGoalKcal:
+          type: integer
+        stepsPercent:
+          type: number
+        hydrationPercent:
+          type: number
+        sleepPercent:
+          type: number
+        caloriesPercent:
+          type: number
+        overallScore:
+          type: number
+
+    TrendPoint:
+      type: object
+      required: [date, steps, hydrationMl, sleepHours, caloriesKcal]
+      properties:
+        date:
+          type: string
+        steps:
+          type: integer
+        hydrationMl:
+          type: integer
+        sleepHours:
+          type: number
+        caloriesKcal:
+          type: integer
