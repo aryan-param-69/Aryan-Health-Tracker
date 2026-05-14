@@ -7,7 +7,7 @@ import {
   getGetDailySummaryQueryKey,
   getGetWeeklyTrendQueryKey
 } from "@workspace/api-client-react";
-import { Activity, Droplets, Moon, Flame, Calendar as CalendarIcon, Edit2, Trash2 } from "lucide-react";
+import { Activity, Droplets, Moon, Flame, Calendar as CalendarIcon, Edit2, Trash2, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { Link } from "wouter";
@@ -162,7 +162,7 @@ export default function History() {
         </div>
       ) : (
         <div className="text-center py-20 text-muted-foreground glass-card rounded-2xl">
-          <History className="w-12 h-12 mx-auto mb-4 opacity-20" />
+          <Clock className="w-12 h-12 mx-auto mb-4 opacity-20" />
           <p>No history available. Start logging to see your progress.</p>
         </div>
       )}
